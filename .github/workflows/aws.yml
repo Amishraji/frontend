@@ -1,0 +1,57 @@
+name: Deploy to Amazon EKS
+on:
+  push:
+    branches:
+      - main
+env:
+  AWS_REGION: us-west-2
+  EKS_CLUSTER: my-eks
+  CONTAINER_NAME1: frontend
+  EKS_keycloak: .github/yaml_Files/frontend.yaml
+ 
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: Dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ECS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_ECS_SECRET_ACCESS_KEY }}
+          aws-region: "us-west-2"
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v2.0
+        with:
+          version: 'v1.24.0' 
+        id: install
+          
+      - name: Update kube config
+        run: |
+          aws eks update-kubeconfig --name ${{env.EKS_CLUSTER}}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image1
+        env:
+          ECR_REGISTRY: "992382462614.dkr.ecr.us-west-2.amazonaws.com"
+          ECR_REPOSITORY: "app-demo"
+          IMAGE_TAG: frontend
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG frontend/.
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+        
+      - name: Deploy to EKS
+        run: |
+          kubectl apply -f ${{ env.EKS_keycloak }}
+          kubectl set image deployment/frontend ${{ env.CONTAINER_NAME1 }}=${{ steps.build-image1.outputs.image }}
+          kubectl rollout status deployment/frontend
