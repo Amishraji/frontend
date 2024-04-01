@@ -1,0 +1,8 @@
+{
+    "realm": "oauth",
+    "auth-server-url": "http://localhost:8080/",
+    "ssl-required": "external",
+    "resource": "pranshu",
+    "public-client": true,
+    "confidential-port": 0
+  }
