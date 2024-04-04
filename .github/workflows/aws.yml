@@ -5,7 +5,7 @@ on:
       - main
 env:
   AWS_REGION: us-west-2
-  EKS_CLUSTER: my-eks
+  EKS_CLUSTER: prod-eks
   CONTAINER_NAME1: frontend
   EKS_keycloak: .github/yaml_Files/frontend.yaml
  
